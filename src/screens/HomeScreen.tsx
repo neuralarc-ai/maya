@@ -10,7 +10,7 @@ type HomeScreenProps = {
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Jarvis</Text>
+      <Text style={styles.title}>Welcome to Maya</Text>
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate('Conversation')}

@@ -11,3 +11,8 @@ export interface Conversation {
   id: string;
   messages: VoiceMessage[];
 }
+
+export interface ConversationResponse {
+  conversation_id: string;
+  audio_url: string;
+}

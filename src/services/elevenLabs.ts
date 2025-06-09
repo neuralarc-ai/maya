@@ -1,7 +1,10 @@
+// This file is no longer needed. ElevenLabs API calls are now handled by the @elevenlabs/react SDK.
+// See https://elevenlabs.io/docs/cookbooks/conversational-ai/expo-react-native for details.
+
 import { Audio } from 'expo-av';
 import Constants from 'expo-constants';
 
-const ELEVEN_LABS_API_URL = 'https://api.elevenlabs.io/v1';
+const ELEVEN_LABS_API_URL = 'https://api.elevenlabs.io/v1/convai/conversation';
 
 export class ElevenLabsService {
   private static instance: ElevenLabsService;
@@ -22,17 +25,40 @@ export class ElevenLabsService {
     return ElevenLabsService.instance;
   }
 
-  async transcribeAudio(audioUri: string): Promise<string> {
+  async startConversation(agentId: string): Promise<string> {
     try {
-      // Convert audio to base64
+      const response = await fetch(`${ELEVEN_LABS_API_URL}/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': this.apiKey,
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ agent_id: agentId }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data.conversation_id;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to start conversation: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  async sendAudio(conversationId: string, audioUri: string): Promise<string> {
+    try {
       const response = await fetch(audioUri);
       const blob = await response.blob();
       const base64Audio = await this.blobToBase64(blob);
 
-      console.log('Sending audio to ElevenLabs API...');
-      
-      // Send to ElevenLabs API
-      const apiResponse = await fetch(`${ELEVEN_LABS_API_URL}/speech-to-text/transcribe`, {
+      const apiResponse = await fetch(`${ELEVEN_LABS_API_URL}/${conversationId}/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,27 +67,42 @@ export class ElevenLabsService {
         },
         body: JSON.stringify({
           audio: base64Audio,
-          model_id: 'whisper-1',
-          language: 'en',
-          response_format: 'text',
-          word_timestamps: false,
-          speaker_diarization: false,
         }),
       });
 
       if (!apiResponse.ok) {
         const errorText = await apiResponse.text();
-        console.error('API Error Response:', errorText);
         throw new Error(`API request failed: ${apiResponse.status} ${apiResponse.statusText} - ${errorText}`);
       }
 
       const data = await apiResponse.json();
-      console.log('Transcription successful:', data);
-      return data.text;
+      return data.audio_url;
     } catch (error) {
-      console.error('Transcription error:', error);
       if (error instanceof Error) {
-        throw new Error(`Transcription failed: ${error.message}`);
+        throw new Error(`Failed to send audio: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  async endConversation(conversationId: string): Promise<void> {
+    try {
+      const response = await fetch(`${ELEVEN_LABS_API_URL}/${conversationId}/end`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to end conversation: ${error.message}`);
       }
       throw error;
     }
@@ -72,7 +113,6 @@ export class ElevenLabsService {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        // Remove the data URL prefix (e.g., "data:audio/wav;base64,")
         const base64 = base64String.split(',')[1];
         resolve(base64);
       };

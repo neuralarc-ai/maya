@@ -12,12 +12,8 @@ export default {
     resizeMode: 'contain',
     backgroundColor: '#ffffff'
   },
-  assetBundlePatterns: [
-    '**/*'
-  ],
-  ios: {
-    supportsTablet: true
-  },
+  assetBundlePatterns: ['**/*'],
+  ios: { supportsTablet: true },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
@@ -28,9 +24,6 @@ export default {
     favicon: './assets/favicon.png',
     bundler: 'metro'
   },
-  plugins: [
-    'expo-audio'
-  ],
   extra: {
     elevenLabsApiKey: process.env.ELEVEN_LABS_API_KEY,
   },
