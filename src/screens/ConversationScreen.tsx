@@ -7,7 +7,7 @@ export default function ConversationScreen() {
   const agentId = 'agent_01jxajnxg3eb69kz07dnpspvrk';
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9F0E4' }}>
       <VoiceAgent agentId={agentId} />
     </SafeAreaView>
   );

@@ -41,6 +41,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 24,
+    backgroundColor: '#F9F0E4',
   },
   infoText: {
     color: '#8E8E93',
@@ -48,5 +49,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '500',
     textAlign: 'center',
+    fontFamily: 'monospace',
   },
 }); 

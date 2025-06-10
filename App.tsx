@@ -15,30 +15,33 @@ const theme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: '#000000',
-    card: '#000000',
-    text: '#ffffff',
-    border: '#1a1a1a',
-    primary: '#ffffff',
+    background: '#F9F0E4',
+    card: '#F9F0E4',
+    text: '#222',
+    border: '#E5E5E5',
+    primary: '#222',
   },
+  fontFamily: 'monospace',
 };
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <GestureHandlerRootView style={[styles.container, { backgroundColor: '#F9F0E4', fontFamily: 'monospace' }] }>
       <NavigationContainer theme={theme}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <Stack.Navigator
           screenOptions={{
             headerStyle: {
-              backgroundColor: '#000000',
+              backgroundColor: '#F9F0E4',
             },
-            headerTintColor: '#ffffff',
+            headerTintColor: '#222',
             headerTitleStyle: {
               fontWeight: '600',
+              fontFamily: 'monospace',
             },
             contentStyle: {
-              backgroundColor: '#000000',
+              backgroundColor: '#F9F0E4',
+              fontFamily: 'monospace',
             },
           }}
         >
@@ -46,7 +49,8 @@ export default function App() {
             name="Home" 
             component={HomeScreen}
             options={{
-              title: 'Jarvis',
+              title: 'Maya',
+              headerTitleStyle: { fontFamily: 'monospace' },
             }}
           />
           <Stack.Screen 
@@ -54,6 +58,7 @@ export default function App() {
             component={ConversationScreen}
             options={{
               title: 'Conversation',
+              headerTitleStyle: { fontFamily: 'monospace' },
             }}
           />
         </Stack.Navigator>
@@ -65,5 +70,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F9F0E4',
+    fontFamily: 'monospace',
   },
 });
