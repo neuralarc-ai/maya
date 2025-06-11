@@ -21,12 +21,11 @@ const theme = {
     border: '#E5E5E5',
     primary: '#222',
   },
-  fontFamily: 'monospace',
 };
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={[styles.container, { backgroundColor: '#F9F0E4', fontFamily: 'monospace' }] }>
+    <GestureHandlerRootView style={styles.container}>
       <NavigationContainer theme={theme}>
         <StatusBar style="dark" />
         <Stack.Navigator
@@ -41,7 +40,6 @@ export default function App() {
             },
             contentStyle: {
               backgroundColor: '#F9F0E4',
-              fontFamily: 'monospace',
             },
           }}
         >
@@ -71,6 +69,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F0E4',
-    fontFamily: 'monospace',
   },
 });

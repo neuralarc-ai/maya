@@ -1,6 +1,9 @@
 import React from 'react';
-import { SafeAreaView } from 'react-native';
-import { VoiceAgent } from '../components/VoiceAgent';
+import { SafeAreaView, Platform } from 'react-native';
+
+const VoiceAgent = Platform.OS === 'web'
+  ? require('../components/VoiceAgentWeb').default
+  : require('../components/VoiceAgent').default;
 
 export default function ConversationScreen() {
   // Replace with your actual ElevenLabs agent ID
