@@ -221,14 +221,48 @@ export default function VoiceAgent({ agentId }: VoiceAgentProps) {
     }
   }, [isListening, startConversation, stopConversation]);
 
+  // Start conversation and recording automatically on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        // Request permissions automatically
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          throw new Error('Permission to access microphone was denied');
+        }
+        // Set audio mode
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+        // Start conversation if not already started
+        if (!conversationId) {
+          await startConversation();
+        }
+        // Start recording if not already recording
+        if (!recording) {
+          const { recording: newRecording } = await Audio.Recording.createAsync(
+            Audio.RecordingOptionsPresets.HIGH_QUALITY,
+            (status) => console.log('Recording status:', status)
+          );
+          setRecording(newRecording);
+          setIsListening(true);
+        }
+      } catch (err) {
+        console.error('Failed to auto start conversation/recording:', err);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <View style={styles.container}>
       <AnimatedMic 
-        listening={isListening} 
-        onPress={handleMicPress}
+        listening={!!recording} 
+        onPress={recording ? handleMicPress : undefined}
       />
       <Text style={styles.infoText}>
-        {isListening ? 'Recording... Tap again to stop' : 'Tap the mic to start recording'}
+        {recording ? 'Recording... Tap again to stop' : 'Starting...'}
       </Text>
       <View style={styles.messagesContainer}>
         {messages.map((msg, index) => (

@@ -4,7 +4,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
-import HomeScreen from './src/screens/HomeScreen';
 import ConversationScreen from './src/screens/ConversationScreen';
 import { RootStackParamList } from './src/types/navigation';
 import './global.css';
@@ -42,15 +41,8 @@ export default function App() {
               backgroundColor: '#F9F0E4',
             },
           }}
+          initialRouteName="Conversation"
         >
-          <Stack.Screen 
-            name="Home" 
-            component={HomeScreen}
-            options={{
-              title: 'Maya',
-              headerTitleStyle: { fontFamily: 'monospace' },
-            }}
-          />
           <Stack.Screen 
             name="Conversation" 
             component={ConversationScreen}

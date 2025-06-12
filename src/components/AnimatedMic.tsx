@@ -15,35 +15,47 @@ const ORB_SIZE = 200;
 const POINTS = 8;
 const RING_RADIUS = 90;
 const RING_WIDTH = 12;
+const FRAGMENT_COLORS = ["#97A487", "#9A7D70", "#A8B0B8", "#97A487", "#9A7D70", "#A8B0B8"];
+const FRAGMENT_COUNT = 6;
+const FRAGMENT_SWEEP = 32; // degrees per fragment
+const FRAGMENT_GAP = 28; // degrees between fragments
+const FRAGMENT_WIDTH = 18;
 
 export function AnimatedMic({ listening, onPress }: { listening: boolean; onPress?: () => void }) {
   if (Platform.OS === 'web') {
     // Fallback: animated SVG orb and ring for web
     return (
       <Pressable onPress={onPress} style={{ width: ORB_SIZE, height: ORB_SIZE, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        {/* Animated rotating ring */}
+        {/* Animated rotating arc fragments */}
         {listening && (
           <svg
             width={ORB_SIZE}
             height={ORB_SIZE}
             style={{ position: 'absolute', left: 0, top: 0, animation: 'orb-rotate 2s linear infinite', zIndex: 2 }}
           >
-            <defs>
-              <linearGradient id="ring-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#B7BEAE" />
-                <stop offset="70%" stopColor="#2B2521" />
-                <stop offset="100%" stopColor="#B7A694" />
-              </linearGradient>
-            </defs>
-            <circle
-              cx={ORB_SIZE / 2}
-              cy={ORB_SIZE / 2}
-              r={RING_RADIUS}
-              fill="none"
-              stroke="url(#ring-gradient)"
-              strokeWidth={RING_WIDTH}
-              style={{ filter: 'blur(2px)' }}
-            />
+            {Array.from({ length: FRAGMENT_COUNT }).map((_, i) => {
+              const angle = (i * (FRAGMENT_SWEEP + FRAGMENT_GAP)) - 90;
+              const color = FRAGMENT_COLORS[i % FRAGMENT_COLORS.length];
+              const r = RING_RADIUS;
+              const startAngle = (angle * Math.PI) / 180;
+              const endAngle = ((angle + FRAGMENT_SWEEP) * Math.PI) / 180;
+              const x1 = ORB_SIZE / 2 + r * Math.cos(startAngle);
+              const y1 = ORB_SIZE / 2 + r * Math.sin(startAngle);
+              const x2 = ORB_SIZE / 2 + r * Math.cos(endAngle);
+              const y2 = ORB_SIZE / 2 + r * Math.sin(endAngle);
+              const largeArcFlag = FRAGMENT_SWEEP > 180 ? 1 : 0;
+              return (
+                <path
+                  key={i}
+                  d={`M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`}
+                  stroke={color}
+                  strokeWidth={FRAGMENT_WIDTH}
+                  strokeLinecap="round"
+                  fill="none"
+                  style={{ filter: 'blur(1.5px)' }}
+                />
+              );
+            })}
           </svg>
         )}
         {/* Orb */}
@@ -76,7 +88,7 @@ export function AnimatedMic({ listening, onPress }: { listening: boolean; onPres
     );
   }
 
-  // Native: Skia animated orb and rotating ring
+  // Native: Skia animated orb and rotating arc fragments
   const [t, setT] = useState(0);
   const animRef = useRef<number | null>(null);
 
@@ -94,6 +106,25 @@ export function AnimatedMic({ listening, onPress }: { listening: boolean; onPres
   }, [listening]);
 
   const center = useMemo(() => vec(ORB_SIZE / 2, ORB_SIZE / 2), []);
+  const rotation = useMemo(() => (t * 2 * Math.PI) % (2 * Math.PI), [t, listening]);
+
+  function getArcFragmentPath(startDeg: number, sweepDeg: number) {
+    const r = RING_RADIUS;
+    const startRad = (startDeg * Math.PI) / 180;
+    const endRad = ((startDeg + sweepDeg) * Math.PI) / 180;
+    const x1 = ORB_SIZE / 2 + r * Math.cos(startRad);
+    const y1 = ORB_SIZE / 2 + r * Math.sin(startRad);
+    const x2 = ORB_SIZE / 2 + r * Math.cos(endRad);
+    const y2 = ORB_SIZE / 2 + r * Math.sin(endRad);
+    const largeArcFlag = sweepDeg > 180;
+    const sweepFlag = true;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const path = Skia.Path.Make();
+    path.moveTo(x1, y1);
+    path.rArcTo(r, r, 0, largeArcFlag, sweepFlag, dx, dy);
+    return path;
+  }
 
   function getOrbPath(t: number) {
     const radius = 80;
@@ -115,26 +146,32 @@ export function AnimatedMic({ listening, onPress }: { listening: boolean; onPres
     return path;
   }
 
-  function getRingPath() {
-    const path = Skia.Path.Make();
-    path.addCircle(ORB_SIZE / 2, ORB_SIZE / 2, RING_RADIUS);
-    return path;
-  }
-
   const path = useMemo(() => getOrbPath(t), [t]);
-  const rotation = useMemo(() => (t * 2 * Math.PI) % (2 * Math.PI), [t, listening]);
 
   return (
     <View style={{ width: ORB_SIZE, height: ORB_SIZE, alignItems: 'center', justifyContent: 'center' }}>
       <Canvas style={{ width: ORB_SIZE, height: ORB_SIZE }}>
-        {/* Rotating ring when listening */}
+        {/* Rotating arc fragments when listening */}
         {listening && (
           <Group origin={center} transform={[{ rotate: rotation }] }>
-            <Path path={getRingPath()} style="stroke" strokeWidth={RING_WIDTH} color={Skia.Color('#B7BEAE')}>
-              <Paint>
-                <BlurMask blur={16} style="normal" />
-              </Paint>
-            </Path>
+            {Array.from({ length: FRAGMENT_COUNT }).map((_, i) => {
+              const angle = (i * (FRAGMENT_SWEEP + FRAGMENT_GAP)) - 90;
+              const color = FRAGMENT_COLORS[i % FRAGMENT_COLORS.length];
+              return (
+                <Path
+                  key={i}
+                  path={getArcFragmentPath(angle, FRAGMENT_SWEEP)}
+                  style="stroke"
+                  strokeWidth={FRAGMENT_WIDTH}
+                  color={Skia.Color(color)}
+                  strokeCap="round"
+                >
+                  <Paint>
+                    <BlurMask blur={4} style="normal" />
+                  </Paint>
+                </Path>
+              );
+            })}
           </Group>
         )}
         {/* Orb */}
