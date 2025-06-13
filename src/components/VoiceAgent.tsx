@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { View, StyleSheet, Text, Alert } from 'react-native';
+import { View, StyleSheet, Text, Alert, Platform } from 'react-native';
 import { Audio } from 'expo-av';
 import Constants from 'expo-constants';
 import { AnimatedMic } from './AnimatedMic';
@@ -20,6 +20,8 @@ export default function VoiceAgent({ agentId }: VoiceAgentProps) {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [autoStartTried, setAutoStartTried] = useState(false);
+  const [autoStartFailed, setAutoStartFailed] = useState(false);
   
   // Extract the actual agent ID (remove 'agent_' prefix if present)
   const actualAgentId = agentId.replace('agent_', '');
@@ -221,48 +223,84 @@ export default function VoiceAgent({ agentId }: VoiceAgentProps) {
     }
   }, [isListening, startConversation, stopConversation]);
 
-  // Start conversation and recording automatically on mount
+  // Attempt to auto-start conversation and recording on mount
   useEffect(() => {
     (async () => {
+      setAutoStartTried(true);
       try {
-        // Request permissions automatically
         const { status } = await Audio.requestPermissionsAsync();
         if (status !== 'granted') {
-          throw new Error('Permission to access microphone was denied');
+          setAutoStartFailed(true);
+          return;
         }
-        // Set audio mode
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
         });
-        // Start conversation if not already started
         if (!conversationId) {
           await startConversation();
         }
-        // Start recording if not already recording
         if (!recording) {
-          const { recording: newRecording } = await Audio.Recording.createAsync(
-            Audio.RecordingOptionsPresets.HIGH_QUALITY,
-            (status) => console.log('Recording status:', status)
-          );
-          setRecording(newRecording);
-          setIsListening(true);
+          try {
+            const { recording: newRecording } = await Audio.Recording.createAsync(
+              Audio.RecordingOptionsPresets.HIGH_QUALITY,
+              (status) => console.log('Recording status:', status)
+            );
+            setRecording(newRecording);
+            setIsListening(true);
+            setAutoStartFailed(false);
+          } catch (err) {
+            setAutoStartFailed(true);
+          }
         }
       } catch (err) {
-        console.error('Failed to auto start conversation/recording:', err);
+        setAutoStartFailed(true);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Handler for manual start (fallback for web)
+  const handleManualStart = async () => {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        setAutoStartFailed(true);
+        return;
+      }
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+      if (!conversationId) {
+        await startConversation();
+      }
+      if (!recording) {
+        const { recording: newRecording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY,
+          (status) => console.log('Recording status:', status)
+        );
+        setRecording(newRecording);
+        setIsListening(true);
+        setAutoStartFailed(false);
+      }
+    } catch (err) {
+      setAutoStartFailed(true);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <AnimatedMic 
         listening={!!recording} 
-        onPress={recording ? handleMicPress : undefined}
+        onPress={autoStartFailed ? handleManualStart : (recording ? handleMicPress : undefined)}
       />
       <Text style={styles.infoText}>
-        {recording ? 'Recording... Tap again to stop' : 'Starting...'}
+        {recording
+          ? 'Recording... Tap again to stop'
+          : autoStartFailed
+            ? 'Click the mic to start (browser requires permission)'
+            : 'Starting...'}
       </Text>
       <View style={styles.messagesContainer}>
         {messages.map((msg, index) => (
